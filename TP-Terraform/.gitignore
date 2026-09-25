@@ -1,0 +1,21 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+override.tf
+
+override.tf.json
+*_override.tf
+*_override.tf.json
+**/.build/
+# Secrets / clés
+*.pem
+id_*
+__pycache__/
+*.pyc
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl

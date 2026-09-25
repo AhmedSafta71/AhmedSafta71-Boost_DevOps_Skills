@@ -1,0 +1,209 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StateBucketListOwnPrefixes",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::techmind-terraform-state",
+      "Condition": {
+        "StringLike": { "s3:prefix": ["safta/*", "safta_modules/*", "safta/", "safta_modules/"] }
+      }
+    },
+    {
+      "Sid": "StateObjectsOwnPrefixes",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:GetObjectTagging", "s3:PutObjectTagging"],
+      "Resource": [
+        "arn:aws:s3:::techmind-terraform-state/safta/*",
+        "arn:aws:s3:::techmind-terraform-state/safta/",
+        "arn:aws:s3:::techmind-terraform-state/safta_modules/*",
+        "arn:aws:s3:::techmind-terraform-state/safta_modules/"
+      ]
+    },
+   
+    {
+      "Sid": "Ec2ReadOnly",
+      "Effect": "Allow",
+      "Action": "ec2:Describe*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "Ec2CreateAndConfigureParisOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances", "ec2:ImportKeyPair",
+        "ec2:CreateSubnet", "ec2:ModifySubnetAttribute",
+        "ec2:CreateRouteTable", "ec2:CreateRoute", "ec2:ReplaceRoute", "ec2:DeleteRoute",
+        "ec2:AssociateRouteTable", "ec2:DisassociateRouteTable",
+        "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress",
+        "ec2:ModifySecurityGroupRules",
+        "ec2:UpdateSecurityGroupRuleDescriptionsIngress", "ec2:UpdateSecurityGroupRuleDescriptionsEgress",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestedRegion": "eu-west-3" } }
+    },
+    {
+      "Sid": "Ec2DestructiveOnlyOnMyTaggedResources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:TerminateInstances", "ec2:StopInstances", "ec2:StartInstances", "ec2:RebootInstances",
+        "ec2:ModifyInstanceAttribute", "ec2:ModifyInstanceMetadataOptions",
+        "ec2:DeleteSubnet", "ec2:DeleteRouteTable", "ec2:DeleteSecurityGroup",
+        "ec2:DeleteKeyPair", "ec2:DeleteTags"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "eu-west-3", "ec2:ResourceTag/Owner": "safta_ahmed" }
+      }
+    },
+    {
+      "Sid": "ReadAmazonLinuxAmiParameter",
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+      "Resource": "arn:aws:ssm:eu-west-3::parameter/aws/service/ami-amazon-linux-latest/*"
+    },
+    {
+      "Sid": "IamManageOwnRolesAndProfiles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UntagRole",
+        "iam:UpdateRole", "iam:UpdateRoleDescription", "iam:UpdateAssumeRolePolicy",
+        "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
+        "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:GetInstanceProfile",
+        "iam:TagInstanceProfile", "iam:UntagInstanceProfile",
+        "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:iam::*:role/techmind_iac_module_safta_ahmed_*",
+        "arn:aws:iam::*:instance-profile/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:iam::*:instance-profile/techmind_iac_module_safta_ahmed_*"
+      ]
+    },
+    {
+      "Sid": "IamAttachOnlySsmManagedPolicies",
+      "Effect": "Allow",
+      "Action": ["iam:AttachRolePolicy", "iam:DetachRolePolicy"],
+      "Resource": [
+        "arn:aws:iam::*:role/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:iam::*:role/techmind_iac_module_safta_ahmed_*"
+      ],
+      "Condition": {
+        "ArnEquals": {
+          "iam:PolicyARN": [
+            "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleForSSM",
+            "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "IamPassOwnRolesToExpectedServicesOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::*:role/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:iam::*:role/techmind_iac_module_safta_ahmed_*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": ["ec2.amazonaws.com", "lambda.amazonaws.com", "scheduler.amazonaws.com"]
+        }
+      }
+    },
+    {
+      "Sid": "LambdaOwnFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction", "lambda:DeleteFunction",
+        "lambda:UpdateFunctionCode", "lambda:UpdateFunctionConfiguration",
+        "lambda:Get*", "lambda:List*",
+        "lambda:TagResource", "lambda:UntagResource", "lambda:InvokeFunction"
+      ],
+      "Resource": [
+        "arn:aws:lambda:eu-west-3:*:function:tech_mind_iac_safta_ahmed_*",
+        "arn:aws:lambda:eu-west-3:*:function:techmind_iac_module_safta_ahmed_*"
+      ]
+    },
+    {
+      "Sid": "LogsOwnLogGroups",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup", "logs:DeleteLogGroup",
+        "logs:PutRetentionPolicy", "logs:DeleteRetentionPolicy",
+        "logs:TagResource", "logs:UntagResource", "logs:ListTagsForResource",
+        "logs:TagLogGroup", "logs:UntagLogGroup", "logs:ListTagsLogGroup",
+        "logs:FilterLogEvents", "logs:GetLogEvents", "logs:DescribeLogStreams"
+      ],
+      "Resource": [
+        "arn:aws:logs:eu-west-3:*:log-group:/aws/lambda/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:logs:eu-west-3:*:log-group:/aws/lambda/techmind_iac_module_safta_ahmed_*"
+      ]
+    },
+    {
+      "Sid": "LogsDescribe",
+      "Effect": "Allow",
+      "Action": "logs:DescribeLogGroups",
+      "Resource": "*"
+    },
+    {
+      "Sid": "SchedulerOwnSchedules",
+      "Effect": "Allow",
+      "Action": ["scheduler:CreateSchedule", "scheduler:GetSchedule", "scheduler:UpdateSchedule", "scheduler:DeleteSchedule"],
+      "Resource": [
+        "arn:aws:scheduler:eu-west-3:*:schedule/default/tech_mind_iac_safta_ahmed_*",
+        "arn:aws:scheduler:eu-west-3:*:schedule/default/techmind_iac_module_safta_ahmed_*"
+      ]
+    },
+    {
+      "Sid": "S3OwnBuckets",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket", "s3:DeleteBucket", "s3:ListBucket", "s3:ListBucketVersions",
+        "s3:GetBucket*", "s3:PutBucket*", "s3:DeleteBucketPolicy",
+        "s3:GetAccelerateConfiguration", "s3:GetLifecycleConfiguration",
+        "s3:GetReplicationConfiguration", "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
+        "s3:DeleteObject", "s3:DeleteObjectVersion"
+      ],
+      "Resource": [
+        "arn:aws:s3:::tech-mind-iac-safta-ahmed-*",
+        "arn:aws:s3:::tech-mind-iac-safta-ahmed-*/*",
+        "arn:aws:s3:::techmind-iac-module-safta-ahmed-*",
+        "arn:aws:s3:::techmind-iac-module-safta-ahmed-*/*"
+      ]
+    },
+    {
+      "Sid": "SsmSessionsAndCommandsOnMyInstances",
+      "Effect": "Allow",
+      "Action": ["ssm:StartSession", "ssm:SendCommand"],
+      "Resource": "arn:aws:ec2:eu-west-3:*:instance/*",
+      "Condition": { "StringEquals": { "ssm:resourceTag/Owner": "safta_ahmed" } }
+    },
+    {
+      "Sid": "SsmAllowedDocuments",
+      "Effect": "Allow",
+      "Action": ["ssm:StartSession", "ssm:SendCommand"],
+      "Resource": [
+        "arn:aws:ssm:eu-west-3::document/AWS-StartSSHSession",
+        "arn:aws:ssm:eu-west-3::document/AWS-RunShellScript",
+        "arn:aws:ssm:eu-west-3:*:document/SSM-SessionManagerRunShell"
+      ]
+    },
+    {
+      "Sid": "SsmReadAndOwnSessions",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeInstanceInformation", "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations", "ssm:ListCommands",
+        "ssm:DescribeSessions", "ssm:GetConnectionStatus",
+        "ssm:TerminateSession", "ssm:ResumeSession"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
