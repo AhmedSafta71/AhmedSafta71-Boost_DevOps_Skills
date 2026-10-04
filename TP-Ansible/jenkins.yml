@@ -1,0 +1,10 @@
+---
+# PARTIE 3 - Installation de Jenkins sur Host 1 (groupe [jenkins] de l'inventaire)
+- name: Partie 3 - Installation de Jenkins
+  hosts: jenkins
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: jenkins
+      tags: [jenkins]

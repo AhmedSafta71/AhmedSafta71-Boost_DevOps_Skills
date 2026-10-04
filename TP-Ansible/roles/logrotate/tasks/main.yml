@@ -1,0 +1,25 @@
+---
+- name: Installer logrotate
+  ansible.builtin.apt:
+    name: logrotate
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Déployer la configuration de rotation
+  ansible.builtin.template:
+    src: logrotate.conf.j2
+    dest: "/etc/logrotate.d/{{ logrotate_config_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Vérifier la configuration (logrotate -d = dry-run)
+  ansible.builtin.command: "logrotate -d /etc/logrotate.d/{{ logrotate_config_name }}"
+  changed_when: false
+
+- name: S'assurer que le timer systemd quotidien de logrotate est actif
+  ansible.builtin.systemd_service:
+    name: logrotate.timer
+    state: started
+    enabled: true

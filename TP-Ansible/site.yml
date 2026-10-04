@@ -1,0 +1,16 @@
+---
+# PARTIE 1 - Playbook principal : appelle les rôles dans l'ordre demandé
+- name: Partie 1 - Déploiement des serveurs Front
+  hosts: front
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: ssh_keys      # 1) Installation des clés publiques SSH des collègues
+      tags: [ssh_keys]
+    - role: filesystem    # 2) FS montés dans /var/www et /var/log/apache2
+      tags: [filesystem]
+    - role: apache2       # 3) Apache2 + page Hello World
+      tags: [apache2]
+    - role: logrotate     # 4) Rotation quotidienne de /var/log/apache2
+      tags: [logrotate]

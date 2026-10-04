@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+<VirtualHost *:{{ apache2_listen_port }}>
+    ServerName {{ apache2_server_name }}
+    ServerAdmin webmaster@localhost
+    DocumentRoot {{ apache2_document_root }}
+
+    <Directory {{ apache2_document_root }}>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/{{ apache2_site_name }}_error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ apache2_site_name }}_access.log combined
+</VirtualHost>

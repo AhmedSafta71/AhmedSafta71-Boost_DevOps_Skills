@@ -1,0 +1,13 @@
+---
+# ----- Rôle ssh_keys -----
+# Un compte par collègue
+ssh_keys_users:
+  - name: ahmed-windows
+    key_file: public_keys/tp-ansible-ahmed-windows.pub
+    sudo: true
+  - name: ahmed-ubuntu
+    key_file: public_keys/tp-ansible-ahmed-ubuntu.pub
+    sudo: true
+
+# Ajoute aussi toutes ces clés au compte "ubuntu"
+ssh_keys_add_to_default_user: false

@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+{% for u in ssh_keys_users if u.sudo | default(false) %}
+{{ u.name }} ALL=(ALL) NOPASSWD:ALL
+{% endfor %}

@@ -1,0 +1,26 @@
+# Copier en terraform.tfvars et reprendre les valeurs de la partie 01
+aws_region  = "eu-west-3"
+name_prefix = "tech_mind_iac_safta_ahmed"
+name_suffix = "_modules_ref"
+
+default_tags = {
+  Project = "tp-ansible"
+  Owner     = "safta_ahmed"
+  ManagedBy = "terraform"
+}
+
+
+vpc_id            = ""
+igw_id            = ""
+nat_gateway_id    = ""
+availability_zone = "
+
+# DIFFÉRENTS de la partie 01 (sinon conflit de CIDR dans le VPC)
+public_subnet_cidr  = "10.0.203.0/24"
+private_subnet_cidr = "10.0.204.0/24"
+
+ssh_public_key_path = "~/.ssh/key.pub"
+
+# IAM existant
+instance_profile_name        = "" # examaple  "AmazonEC2RoleForSSM" 
+allowed_ssh_cidr= "" # Optionelle

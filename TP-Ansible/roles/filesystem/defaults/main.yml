@@ -1,0 +1,18 @@
+---
+filesystem_disk: /dev/nvme1n1 
+filesystem_vg_name: vg_data
+filesystem_volumes:
+  - lv: lv_www
+    size: 2g 
+    fstype: ext4
+    mountpoint: /var/www
+    owner: root
+    group: root
+    mode: "0755"
+  - lv: lv_apache_logs
+    size: 1g
+    fstype: ext4
+    mountpoint: /var/log/apache2
+    owner: root
+    group: adm
+    mode: "0750"

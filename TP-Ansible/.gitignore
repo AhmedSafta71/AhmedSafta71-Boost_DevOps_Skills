@@ -1,0 +1,10 @@
+inventory/hosts.ini
+partie2-glpi/inventory/hosts.ini
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate*
+**/terraform.tfvars
+*.retry
+ansible-venv/
+files/public_keys
+.pre-commit-config.yaml

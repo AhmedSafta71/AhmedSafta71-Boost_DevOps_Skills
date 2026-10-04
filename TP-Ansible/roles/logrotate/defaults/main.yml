@@ -1,0 +1,12 @@
+---
+# Le fichier porte le nom "apache2" pour REMPLACER /etc/logrotate.d/apache2
+# fourni par le paquet (sinon logrotate signale un "duplicate log entry")
+logrotate_config_name: apache2
+logrotate_log_dir: /var/log/apache2
+logrotate_frequency: daily
+logrotate_rotate: 14
+logrotate_create: "640 root adm"
+logrotate_postrotate: |
+  if pgrep -f ^/usr/sbin/apache2 > /dev/null; then
+      invoke-rc.d apache2 reload 2>&1 | logger -t apache2.logrotate
+  fi
