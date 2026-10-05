@@ -1,0 +1,6 @@
+---
+# placé en bas de  priorité /réserve
+ssh_keys_users: []            
+ssh_keys_default_user: ubuntu
+ssh_keys_add_to_default_user: true
+ssh_keys_sudo_nopasswd: true

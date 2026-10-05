@@ -1,0 +1,7 @@
+---
+apache2_site_name: tp-ansible
+apache2_document_root: /var/www/html
+apache2_listen_port: 80
+apache2_server_name: "{{ ansible_facts['hostname'] }}"
+# true = afficher l'IP publique (récupérée via les métadonnées EC2) si disponible
+apache2_prefer_public_ip: true

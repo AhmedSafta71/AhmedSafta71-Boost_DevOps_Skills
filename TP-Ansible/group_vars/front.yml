@@ -1,0 +1,9 @@
+---
+# ----- Rôle filesystem -----
+# Vérifiez le nom du disque avec "lsblk" sur l'instance
+# t3.* (Nitro) -> /dev/nvme1n1   |   t2.* (Xen) -> /dev/xvdf
+filesystem_disk: /dev/nvme1n1 
+
+# ----- Rôle logrotate -----
+logrotate_frequency: daily
+logrotate_rotate: 14

@@ -1,0 +1,101 @@
+---
+- name: Installer Apache2
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Créer le DocumentRoot
+  ansible.builtin.file:
+    path: "{{ apache2_document_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# --- Récupération de l'IP publique via le service de métadonnées EC2 (IMDSv2) ---
+- name: Obtenir un jeton IMDSv2
+  ansible.builtin.uri:
+    url: http://169.254.169.254/latest/api/token
+    method: PUT
+    headers:
+      X-aws-ec2-metadata-token-ttl-seconds: "300"
+    return_content: true
+    timeout: 3
+  register: apache2_imds_token
+  failed_when: false
+  when: apache2_prefer_public_ip | bool
+
+- name: Lire l'IP publique de l'instance
+  ansible.builtin.uri:
+    url: http://169.254.169.254/latest/meta-data/public-ipv4
+    headers:
+      X-aws-ec2-metadata-token: "{{ apache2_imds_token.content }}"
+    return_content: true
+    timeout: 3
+  register: apache2_imds_ip
+  failed_when: false
+  when:
+    - apache2_prefer_public_ip | bool
+    - apache2_imds_token.status | default(0) == 200
+
+- name: Choisir l'IP à afficher (publique sinon privée depuis les facts)
+  ansible.builtin.set_fact:
+    apache2_display_ip: >-
+      {{ apache2_imds_ip.content
+         if (apache2_imds_ip.status | default(0)) == 200
+         else ansible_facts['default_ipv4']['address'] }}
+
+- name: Déployer la page Hello World (template Jinja2)
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ apache2_document_root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Déployer le VirtualHost
+  ansible.builtin.template:
+    src: vhost.conf.j2
+    dest: "/etc/apache2/sites-available/{{ apache2_site_name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload apache2
+
+- name: Activer notre site (a2ensite)
+  ansible.builtin.command: "a2ensite {{ apache2_site_name }}"
+  args:
+    creates: "/etc/apache2/sites-enabled/{{ apache2_site_name }}.conf"
+  notify: Reload apache2
+
+- name: Désactiver le site par défaut (a2dissite)
+  ansible.builtin.command: a2dissite 000-default
+  args:
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify: Reload apache2
+
+- name: Vérifier la syntaxe Apache (apache2ctl configtest)
+  ansible.builtin.command: apache2ctl configtest
+  changed_when: false
+
+- name: Démarrer Apache2 et l'activer au boot
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true
+
+- name: Appliquer les handlers maintenant
+  ansible.builtin.meta: flush_handlers
+
+- name: Tester la page localement
+  ansible.builtin.uri:
+    url: "http://localhost:{{ apache2_listen_port }}/"
+    return_content: true
+  register: apache2_page
+  failed_when: "'Hello World' not in apache2_page.content"
+
+- name: Afficher le message servi
+  ansible.builtin.debug:
+    msg: "http://{{ apache2_display_ip }}/ -> OK"

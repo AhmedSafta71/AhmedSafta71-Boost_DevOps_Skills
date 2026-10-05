@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: tp-ansible
+  description: Rôle logrotate du TP Ansible
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: [noble, jammy]
+dependencies: []

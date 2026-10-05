@@ -1,0 +1,41 @@
+---
+- name: Créer un compte Linux pour chaque collègue
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+    create_home: true
+    groups: "{{ 'sudo' if item.sudo | default(false) else omit }}"
+    append: "{{ true if item.sudo | bool else omit }}"
+    state: present
+  loop: "{{ ssh_keys_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Déposer la clé publique dans le compte du collègue
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/files/' ~ item.key_file) }}"
+    state: present
+  loop: "{{ ssh_keys_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Ajouter aussi les clés au compte par défaut
+  ansible.posix.authorized_key:
+    user: "{{ ssh_keys_default_user }}"
+    key: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/files/' ~ item.key_file) }}"
+    state: present
+  loop: "{{ ssh_keys_users }}"
+  loop_control:
+    label: "{{ item.name }} -> {{ ssh_keys_default_user }}"
+  when: ssh_keys_add_to_default_user | bool
+
+- name: Autoriser sudo sans mot de passe pour les collègues "sudo"
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: /etc/sudoers.d/90-tp-ansible-users
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: ssh_keys_sudo_nopasswd | bool

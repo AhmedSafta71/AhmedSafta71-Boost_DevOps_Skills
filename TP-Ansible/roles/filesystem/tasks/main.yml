@@ -1,0 +1,72 @@
+---
+- name: Installer LVM
+  ansible.builtin.apt:
+    name: lvm2
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Vérifier que le disque additionnel existe
+  ansible.builtin.stat:
+    path: "{{ filesystem_disk }}"
+  register: filesystem_disk_stat
+
+- name: Arrêter si le disque est introuvable
+  ansible.builtin.assert:
+    that: filesystem_disk_stat.stat.exists
+    fail_msg: "Disque {{ filesystem_disk }} introuvable. Lancez 'lsblk' sur l'hôte et ajustez filesystem_disk."
+
+- name: Créer le Volume Group (pvcreate + vgcreate)
+  community.general.lvg:
+    vg: "{{ filesystem_vg_name }}"
+    pvs: "{{ filesystem_disk }}"
+    state: present
+
+- name: Créer les Logical Volumes (lvcreate)
+  community.general.lvol:
+    vg: "{{ filesystem_vg_name }}"
+    lv: "{{ item.lv }}"
+    size: "{{ item.size }}"
+    shrink: false
+  loop: "{{ filesystem_volumes }}"
+  loop_control:
+    label: "{{ item.lv }} ({{ item.size }})"
+
+- name: Formater les Logical Volumes (mkfs)
+  community.general.filesystem:
+    fstype: "{{ item.fstype }}"
+    dev: "/dev/{{ filesystem_vg_name }}/{{ item.lv }}"
+  loop: "{{ filesystem_volumes }}"
+  loop_control:
+    label: "/dev/{{ filesystem_vg_name }}/{{ item.lv }}"
+
+- name: Créer les points de montage
+  ansible.builtin.file:
+    path: "{{ item.mountpoint }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ filesystem_volumes }}"
+  loop_control:
+    label: "{{ item.mountpoint }}"
+
+- name: Monter les filesystems et les déclarer dans /etc/fstab
+  ansible.posix.mount:
+    path: "{{ item.mountpoint }}"
+    src: "/dev/{{ filesystem_vg_name }}/{{ item.lv }}"
+    fstype: "{{ item.fstype }}"
+    opts: defaults,nofail
+    state: mounted
+  loop: "{{ filesystem_volumes }}"
+  loop_control:
+    label: "{{ item.mountpoint }}"
+
+- name: Appliquer propriétaire et droits sur les FS montés
+  ansible.builtin.file:
+    path: "{{ item.mountpoint }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+    state: directory
+  loop: "{{ filesystem_volumes }}"
+  loop_control:
+    label: "{{ item.mountpoint }}"

@@ -1,0 +1,13 @@
+---
+# Valeurs issues de la doc officielle : https://www.jenkins.io/doc/book/installing/linux/
+# Vérifiez l'URL de la clé sur la doc au moment du TP (elle change lors des rotations de clé)
+jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+jenkins_repo_url: https://pkg.jenkins.io/debian-stable
+jenkins_keyring: /etc/apt/keyrings/jenkins-keyring.asc
+jenkins_java_package: openjdk-21-jre-headless
+jenkins_http_port: 8080
+
+# Jenkins est gourmand : un swap évite les plantages sur t3.micro (1 Go RAM)
+jenkins_create_swap: true
+jenkins_swap_file: /swapfile
+jenkins_swap_size_mb: 2048

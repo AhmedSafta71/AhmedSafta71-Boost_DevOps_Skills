@@ -1,0 +1,96 @@
+---
+- name: Configurer un fichier de swap
+  ansible.builtin.import_tasks: swap.yml
+  when: jenkins_create_swap | bool
+
+- name: Installer Java et les prérequis
+  ansible.builtin.apt:
+    name:
+      - fontconfig
+      - "{{ jenkins_java_package }}"
+      - ca-certificates
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Créer le dossier des keyrings APT
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Télécharger la clé GPG du dépôt Jenkins
+  ansible.builtin.get_url:
+    url: "{{ jenkins_repo_key_url }}"
+    dest: "{{ jenkins_keyring }}"
+    mode: "0644"
+    force: true
+
+- name: Ajouter le dépôt APT Jenkins (format deb822)
+  ansible.builtin.deb822_repository:
+    name: jenkins
+    types: deb
+    uris: "{{ jenkins_repo_url }}"
+    suites: binary/
+    signed_by: "{{ jenkins_keyring }}"
+    state: present
+
+- name: Installer Jenkins
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+    update_cache: true
+
+- name: Créer le dossier d'override systemd
+  ansible.builtin.file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: "0755"
+
+- name: Configurer le port HTTP de Jenkins
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    mode: "0644"
+  notify: Restart jenkins
+
+- name: Démarrer Jenkins et l'activer au boot
+  ansible.builtin.systemd_service:
+    name: jenkins
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Appliquer les handlers maintenant
+  ansible.builtin.meta: flush_handlers
+
+- name: Attendre que Jenkins écoute sur son port
+  ansible.builtin.wait_for:
+    port: "{{ jenkins_http_port }}"
+    delay: 5
+    timeout: 300
+
+- name: Attendre la génération du mot de passe initial
+  ansible.builtin.wait_for:
+    path: /var/lib/jenkins/secrets/initialAdminPassword
+    timeout: 300
+
+- name: Lire le mot de passe administrateur initial
+  ansible.builtin.slurp:
+    src: /var/lib/jenkins/secrets/initialAdminPassword
+  register: jenkins_initial_password
+
+- name: Vérifier que l'interface web répond (HTTP 200 ou 403 = OK)
+  ansible.builtin.uri:
+    url: "http://localhost:{{ jenkins_http_port }}/login"
+    status_code: [200, 403]
+  register: jenkins_http
+  retries: 10
+  delay: 10
+  until: jenkins_http.status in [200, 403]
+
+- name: Informations de connexion
+  ansible.builtin.debug:
+    msg:
+      - "Jenkins : http://{{ ansible_host }}:{{ jenkins_http_port }}"
+      - "Mot de passe initial : {{ jenkins_initial_password.content | b64decode | trim }}"
